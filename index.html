@@ -341,7 +341,7 @@ function startQuiz(){
     var lang=S.mode==='en'?'en':(S.mode==='ja'?'ja':(Math.random()<0.5?'en':'ja'));
     var correct=lang==='en'?m.e:m.j;
     // 英文用造句填空，日文維持單字問答
-    var question=lang==='en'?m.se:(m.z+' 的日文是什麼？');
+    var question=lang==='en'?('「'+m.z+'」英文是？ '+m.se):(m.z+' 的日文是什麼？');
     var all=[];
     var items=M();for(var j=0;j<items.length;j++){all.push(lang==='en'?items[j].e:items[j].j);}
     var wrong=[];for(var j=0;j<all.length;j++){if(all[j]!==correct)wrong.push(all[j]);}
