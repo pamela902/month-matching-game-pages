@@ -252,9 +252,8 @@ function CK(el,lg,k){
   el.classList.toggle('sel');
   // 語音朗讀
   var txt=el.textContent;
-  if(lg==='zh')SPK(txt,'zh-CN');
-  else if(lg==='en')SPK(txt,'en-US');
-  else SPK(txt,'ja-JP');
+  if(lg==='en')SPK(txt,'en-US');
+  else if(lg==='ja')SPK(txt,'ja-JP');
   // 顯示關聯詞語
   if(el.classList.contains('sel')){
     var ph=P[k];
