@@ -330,7 +330,7 @@ function checkQuizQ(){
 }
 
 // 口說測驗
-var spkData=[],spkIdx=0,spkScore=0,spkRec=null;
+var spkData=[],spkIdx=0,spkScore=0,spkRec=null,spkTimer=null;
 function startSpeak(){
   var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SpeechRecognition){alert('你的瀏覽器不支援語音辨識，請用 Chrome');return;}
@@ -352,7 +352,7 @@ function renderSpkQ(){
     var emoji=spkScore===spkData.length?'🎉🏆':spkScore>=spkData.length/2?'👍':'💪';
     G('spk-body').innerHTML='<h2 style="font-size:2.5em">'+emoji+'</h2><p style="font-size:1.4em">答對 <b>'+spkScore+'</b> / '+spkData.length+' 題</p>';
     G('spk-submit').style.display='none';G('spk-close').style.display='inline-block';
-    G('spk-close').onclick=function(){G('spk-pop').classList.remove('show');};
+    G('spk-close').onclick=function(){clearTimeout(spkTimer);if(spkRec)spkRec.stop();G('spk-pop').classList.remove('show');};
     return;
   }
   var q=spkData[spkIdx];
@@ -366,13 +366,21 @@ function renderSpkQ(){
 
 function speakListen(q){
   var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(spkRec){spkRec.stop();}
+  if(spkRec){spkRec.stop();clearTimeout(spkTimer);}
   spkRec=new SpeechRecognition();
   spkRec.lang=q.lang==='en'?'en-US':'ja-JP';
   spkRec.continuous=false;spkRec.interimResults=false;
   G('spk-submit').disabled=true;G('spk-submit').textContent='聆聽中...';
   G('spk-heard').textContent='';
+  // 10 秒逾時
+  spkTimer=setTimeout(function(){
+    spkRec.stop();
+    G('spk-heard').textContent='超過 10 秒，請再試一次';
+    G('spk-submit').disabled=false;G('spk-submit').textContent='重試';
+    G('spk-submit').onclick=function(){speakListen(q);};
+  },10000);
   spkRec.onresult=function(e){
+    clearTimeout(spkTimer);
     var heard=e.results[0][0].transcript.trim();
     G('spk-heard').textContent='你說：'+heard;
     var isCorrect=heard.toLowerCase().replace(/\s/g,'')===q.correct.toLowerCase().replace(/\s/g,'');
@@ -382,6 +390,7 @@ function speakListen(q){
     G('spk-submit').onclick=function(){spkIdx++;renderSpkQ();};
   };
   spkRec.onerror=function(e){
+    clearTimeout(spkTimer);
     G('spk-heard').textContent='辨識失敗，請再試一次';
     G('spk-submit').disabled=false;G('spk-submit').textContent='重試';
   };
