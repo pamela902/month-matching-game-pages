@@ -147,6 +147,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <br>
   <button class="btn btn-go" id="quiz-btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);margin-top:10px">隨堂小考</button>
   <button class="btn btn-go" id="speak-btn" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);margin-top:10px">口說測驗</button>
+  <button class="btn btn-go" id="listen-btn" style="background:linear-gradient(135deg,#16a085,#1abc9c);margin-top:10px">聽力測驗</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -174,6 +175,14 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <div id="spk-body"></div>
   <button class="btn btn-go" id="spk-submit">開始錄音</button>
   <button class="btn btn-go" id="spk-close" style="display:none;background:#999">關閉</button>
+</div></div>
+
+<!-- 聽力測驗彈窗 -->
+<div class="stage-popup" id="lis-pop"><div class="stage-msg" style="max-width:450px">
+  <h2 id="lis-title">聽力測驗</h2>
+  <div id="lis-body"></div>
+  <button class="btn btn-go" id="lis-submit">下一題</button>
+  <button class="btn btn-go" id="lis-close" style="display:none;background:#999">關閉</button>
 </div></div>
 
 </div>
@@ -398,6 +407,78 @@ function speakListen(q){
   spkRec.start();
 }
 
+// 聽力測驗
+var lisData=[],lisIdx=0,lisScore=0;
+function startListen(){
+  if(!window.speechSynthesis){alert('你的瀏覽器不支援語音播放，請用 Chrome');return;}
+  var pool=SH(M).slice(0,5);
+  lisData=[];lisIdx=0;lisScore=0;
+  for(var i=0;i<pool.length;i++){
+    var m=pool[i];
+    var lang=S.mode==='en'?'en':(S.mode==='ja'?'ja':(Math.random()<0.5?'en':'ja'));
+    var spoken=lang==='en'?m.e:m.j;
+    var correct=m.z;
+    // 收集錯誤的中文選項
+    var wrong=[];for(var j=0;j<M.length;j++){if(M[j].z!==correct)wrong.push(M[j].z);}
+    wrong=SH(wrong).slice(0,3);
+    var opts=SH([correct].concat(wrong));
+    var ans=opts.indexOf(correct);
+    lisData.push({spoken:spoken,lang:lang,opts:opts,ans:ans});
+  }
+  G('lis-pop').classList.add('show');G('lis-close').style.display='none';
+  renderLisQ();
+}
+
+function renderLisQ(){
+  if(lisIdx>=lisData.length){
+    var emoji=lisScore===lisData.length?'🎉🏆':lisScore>=lisData.length/2?'👍':'💪';
+    G('lis-title').textContent='聽力成績';
+    G('lis-body').innerHTML='<h2 style="font-size:2.5em">'+emoji+'</h2><p style="font-size:1.4em">答對 <b>'+lisScore+'</b> / '+lisData.length+' 題</p>';
+    G('lis-submit').style.display='none';G('lis-close').style.display='inline-block';
+    G('lis-close').onclick=function(){G('lis-pop').classList.remove('show');};
+    return;
+  }
+  var q=lisData[lisIdx];
+  G('lis-title').textContent='第 '+(lisIdx+1)+' / '+lisData.length+' 題';
+  var h='<p style="color:#666;margin-bottom:10px">請聽發音，選出正確的中文：</p>';
+  h+='<button class="btn btn-ok" id="lis-play" style="font-size:2em;padding:10px 30px">🔊 播放</button>';
+  h+='<div style="margin-top:15px" id="lis-opts"></div>';
+  G('lis-body').innerHTML=h;
+  // 選項
+  var od=G('lis-opts');
+  for(var i=0;i<q.opts.length;i++){
+    var lb=document.createElement('label');
+    lb.className='quiz-opt';
+    lb.style.cssText='display:block;text-align:left;padding:8px 12px;margin:4px 0;border-radius:8px;cursor:pointer;transition:background .2s';
+    lb.innerHTML='<input type="radio" name="la" value="'+i+'"> '+q.opts[i];
+    od.appendChild(lb);
+  }
+  // 播放按鈕
+  G('lis-play').onclick=function(){SPK(q.spoken,q.lang==='en'?'en-US':'ja-JP');};
+  G('lis-submit').style.display='inline-block';G('lis-submit').textContent='確認';
+  G('lis-submit').disabled=false;
+  G('lis-submit').onclick=function(){checkLisQ(q);};
+  G('lis-close').style.display='inline-block';
+  G('lis-close').onclick=function(){window.speechSynthesis.cancel();G('lis-pop').classList.remove('show');};
+  // 自動播放
+  setTimeout(function(){SPK(q.spoken,q.lang==='en'?'en-US':'ja-JP');},300);
+}
+
+function checkLisQ(q){
+  var sel=document.querySelector('input[name="la"]:checked');
+  if(!sel){alert('請選擇一個答案');return;}
+  var ans=parseInt(sel.value),correct=ans===q.ans;
+  if(correct)lisScore++;
+  var labels=document.querySelectorAll('#lis-opts .quiz-opt');
+  for(var i=0;i<labels.length;i++){
+    labels[i].style.pointerEvents='none';
+    if(i===q.ans)labels[i].style.background='#d4efdf';
+    if(i===ans&&!correct)labels[i].style.background='#fadbd8';
+  }
+  G('lis-submit').textContent='下一題';
+  G('lis-submit').onclick=function(){lisIdx++;renderLisQ();};
+}
+
 function GO(){
   var a=G('c1').value.trim(),b=G('c2').value.trim();
   if(!a||!b){alert('請填寫班級和座號');return;}
@@ -535,7 +616,8 @@ function RE(){G('result').style.display='none';G('login').style.display='block';
 G('go').onclick=GO;
 G('re').onclick=RE;
 G('quiz-btn').onclick=startQuiz;
-G('speak-btn').onclick=startSpeak;
+  G('speak-btn').onclick=startSpeak;
+  G('listen-btn').onclick=startListen;
 G('c2').onkeydown=function(e){if(e.key==='Enter')GO();};
 })();
 </script>
