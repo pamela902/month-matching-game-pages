@@ -239,7 +239,7 @@ function aiTip(month,stage){
 }
 
 // AI 隨堂小考
-var quizData=[];
+var quizData=[],quizIdx=0,quizScore=0,quizTotal=0;
 function startQuiz(){
   var gk=getGroqKey();if(!gk){alert('請先在登入頁設定 Groq API Key');return;}
   G('quiz-pop').classList.add('show');
@@ -255,7 +255,7 @@ function startQuiz(){
     body:JSON.stringify({
       model:'llama-3.3-70b-versatile',
       messages:[
-        {role:'system',content:'你是台灣國小語言老師。請出3題月份中英日文選擇題。輸出嚴格JSON陣列，每題含q(題目), opts(4個選項陣列), ans(正確答案索引0-3)。題目用繁體中文，選項可混搭中英日文。不要markdown。'},
+        {role:'system',content:'你是台灣國小語言老師。請出5題月份中英日文選擇題。輸出嚴格JSON陣列，每題含q(題目), opts(4個選項陣列), ans(正確答案索引0-3)。題目用繁體中文，選項可混搭中英日文。不要markdown。'},
         {role:'user',content:'學生答錯過的月份：'+wrongs+'。請針對弱項出題。輸出格式：[{"q":"題目","opts":["A","B","C","D"],"ans":0}]'}
       ],
       max_tokens:600,temperature:0.7
@@ -272,7 +272,9 @@ function startQuiz(){
       G('quiz-close').style.display='inline-block';
       return;
     }
-    renderQuiz();
+    quizData=SH(quizData);
+    quizIdx=0;quizScore=0;quizTotal=quizData.length;
+    renderQuizQ();
   })
   .catch(function(){
     G('quiz-body').innerHTML='<p>連線失敗，請檢查網路</p>';
@@ -280,34 +282,43 @@ function startQuiz(){
   });
 }
 
-function renderQuiz(){
-  G('quiz-title').textContent='AI 隨堂小考';
-  var h='';
-  for(var i=0;i<quizData.length;i++){
-    var q=quizData[i];h+='<div style="text-align:left;margin:12px 0"><b>'+(i+1)+'. '+q.q+'</b></div>';
-    for(var j=0;j<q.opts.length;j++){
-      h+='<label style="display:block;text-align:left;padding:4px 0;cursor:pointer"><input type="radio" name="q'+i+'" value="'+j+'"> '+q.opts[j]+'</label>';
-    }
+function renderQuizQ(){
+  if(quizIdx>=quizTotal){
+    var emoji=quizScore===quizTotal?'🎉🏆':quizScore>=quizTotal/2?'👍':'💪';
+    G('quiz-title').textContent='測驗結果';
+    G('quiz-body').innerHTML='<h2 style="font-size:2.5em">'+emoji+'</h2><p style="font-size:1.4em">答對 <b>'+quizScore+'</b> / '+quizTotal+' 題</p>'+(quizScore===quizTotal?'<p style="color:#27ae60">太厲害了！全部答對！</p>':'<p style="color:#e67e22">再練習一下會更好！</p>');
+    G('quiz-submit').style.display='none';
+    G('quiz-close').textContent='關閉';
+    G('quiz-close').style.display='inline-block';
+    G('quiz-close').onclick=function(){G('quiz-pop').classList.remove('show');};
+    return;
+  }
+  var q=quizData[quizIdx];
+  G('quiz-title').textContent='第 '+(quizIdx+1)+' / '+quizTotal+' 題';
+  var h='<div style="text-align:left;margin-bottom:12px"><b>'+q.q+'</b></div>';
+  for(var j=0;j<q.opts.length;j++){
+    h+='<label class="quiz-opt" style="display:block;text-align:left;padding:8px 12px;margin:4px 0;border-radius:8px;cursor:pointer;transition:background .2s"><input type="radio" name="qa" value="'+j+'"> '+q.opts[j]+'</label>';
   }
   G('quiz-body').innerHTML=h;
   G('quiz-submit').style.display='inline-block';
-  G('quiz-submit').textContent='交卷';
-  G('quiz-submit').onclick=checkQuiz;
-  G('quiz-close').style.display='inline-block';
-  G('quiz-close').onclick=function(){G('quiz-pop').classList.remove('show');};
+  G('quiz-submit').textContent='下一題';
+  G('quiz-submit').onclick=checkQuizQ;
+  G('quiz-close').style.display='none';
 }
 
-function checkQuiz(){
-  var correct=0;
-  for(var i=0;i<quizData.length;i++){
-    var sel=document.querySelector('input[name="q'+i+'"]:checked');
-    if(sel&&parseInt(sel.value)===quizData[i].ans)correct++;
+function checkQuizQ(){
+  var sel=document.querySelector('input[name="qa"]:checked');
+  if(!sel){alert('請選擇一個答案');return;}
+  var ans=parseInt(sel.value),correct=quizData[quizIdx].ans;
+  if(ans===correct){quizScore++;}
+  var labels=document.querySelectorAll('.quiz-opt');
+  for(var i=0;i<labels.length;i++){
+    labels[i].style.pointerEvents='none';
+    if(i===correct)labels[i].style.background='#d4efdf';
+    if(i===ans&&i!==correct)labels[i].style.background='#fadbd8';
   }
-  var emoji=correct===3?'🎉🏆':correct>=2?'👍':'💪';
-  G('quiz-body').innerHTML='<h2 style="font-size:2em">'+emoji+'</h2><p style="font-size:1.3em">答對 <b>'+correct+'</b> / '+quizData.length+' 題</p>'+(correct===3?'<p style="color:#27ae60">太厲害了！全部答對！</p>':'<p style="color:#e67e22">再練習一下會更好！</p>');
-  G('quiz-submit').style.display='none';
-  G('quiz-close').textContent='關閉';
-  G('quiz-close').onclick=function(){G('quiz-pop').classList.remove('show');};
+  G('quiz-submit').textContent='繼續';
+  G('quiz-submit').onclick=function(){quizIdx++;renderQuizQ();};
 }
 
 function GO(){
