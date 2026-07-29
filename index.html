@@ -131,7 +131,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <div class="msg" id="rm"></div>
   <div class="stats">
     <p>玩家：<b id="rp"></b></p>
-    <p>總得分：<b id="rs"></b> 分（滿分 100）</p>
+    <p>總得分：<b id="rs"></b> 分（滿分 <span id="rmax">100</span>）</p>
     <p>花費時間：<b id="rt"></b></p>
     <p>階段一：<b id="rc1"></b> / 5 &nbsp;|&nbsp; 階段二：<b id="rc2"></b> / 5</p>
   </div>
@@ -431,10 +431,9 @@ function EG(){
   G('game').style.display='none';G('result').style.display='block';
   G('rp').textContent=S.id;G('rs').textContent=S.sc;G('rt').textContent=FT(S.el);
   G('rc1').textContent=S.stg1ok;G('rc2').textContent=S.stg2ok;
-  G('rs').parentNode.innerHTML='總得分：<b id="rs">'+S.sc+'</b> 分（滿分 '+max+'）';
-  if(S.mode!=='both'){
-    document.querySelector('#result .stats p:last-child').style.display='none';
-  }
+  G('rmax').textContent=max;
+  var stgRow=document.querySelector('#result .stats p:last-child');
+  stgRow.style.display=S.mode!=='both'?'none':'';
   if(p){G('ri').textContent='🎉🌟🏆';G('rm').textContent='你好棒！';G('rm').className='msg good';}
   else{G('ri').textContent='💪📚🔥';G('rm').textContent='再加油！';G('rm').className='msg bad';}
   SV(S.id,S.sc,S.stg1ok+S.stg2ok,S.el,p);
@@ -446,7 +445,7 @@ function SV(sid,sc,tm,ts,ps){
   .catch(function(){G('sv').textContent='成績儲存失敗';G('sv').style.display='block';G('sv').style.color='#e74c3c';});
 }
 
-function RE(){G('result').style.display='none';G('login').style.display='block';G('c1').value='';G('c2').value='';}
+function RE(){G('result').style.display='none';G('login').style.display='block';G('c1').value='';G('c2').value='';document.querySelector('#result .stats p:last-child').style.display='';}
 
 G('go').onclick=GO;
 G('re').onclick=RE;
