@@ -133,7 +133,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <p class="save-ok" id="sv">已儲存成績紀錄</p>
   <button class="btn btn-go" id="re">再玩一次</button>
   <br>
-  <button class="btn btn-go" id="quiz-btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);margin-top:10px">AI 隨堂小考</button>
+  <button class="btn btn-go" id="quiz-btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);margin-top:10px">隨堂小考</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -241,49 +241,32 @@ function aiTip(month,stage){
   });
 }
 
-// AI 隨堂小考
+// AI 隨堂小考（本機出題，不依賴 Groq）
 var quizData=[],quizIdx=0,quizScore=0,quizTotal=0;
 function startQuiz(){
-  var gk=getGroqKey();if(!gk){alert('請先在登入頁設定 Groq API Key');return;}
   G('quiz-pop').classList.add('show');
-  G('quiz-title').textContent='AI 出題中...';
-  G('quiz-body').innerHTML='<p style="color:#666">正在生成題目，請稍候...</p>';
+  G('quiz-title').textContent='隨堂小考';
   G('quiz-submit').style.display='none';
   G('quiz-close').style.display='none';
-
-  var wrongs=S.wrong.length>0?S.wrong.join('、'):'無特別弱項';
-  fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'llama-3.3-70b-versatile',
-      messages:[
-        {role:'system',content:'你是台灣國小語言老師。出5題月份選擇題，只考英文單字或日文平假名，不考中文。每題只問一種語言。問英文→4個選項全是英文單字。問日文→4個選項全是平假名。禁止出現中文拼音、注音、漢字。輸出嚴格JSON。'},
-        {role:'user',content:'參考資料：一月=いちがつ、二月=にがつ、三月=さんがつ、四月=しがつ、五月=ごがつ、六月=ろくがつ、七月=しちがつ、八月=はちがつ、九月=くがつ、十月=じゅうがつ、十一月=じゅういちがつ、十二月=じゅうにがつ。英文：一月=January、二月=February、三月=March、四月=April、五月=May、六月=June、七月=July、八月=August、九月=September、十月=October、十一月=November、十二月=December。學生答錯過的月份：'+wrongs+'。針對弱項出5題。輸出：[{"q":"...","opts":["...",...],"ans":0}]'}
-      ],
-      max_tokens:600,temperature:0.7
-    })
-  }).then(function(r){return r.json();})
-  .then(function(d){
-    var raw=d.choices&&d.choices[0]&&d.choices[0].message?d.choices[0].message.content:'[]';
-    try{
-      var json=raw.replace(/```json|```/g,'').trim();
-      quizData=JSON.parse(json);
-    }catch(e){quizData=[];}
-    if(!quizData.length){
-      G('quiz-body').innerHTML='<p>出題失敗，請再試一次</p>';
-      G('quiz-close').style.display='inline-block';
-      return;
-    }
-    quizData=SH(quizData);
-    quizData=quizData.slice(0,5);
-    quizIdx=0;quizScore=0;quizTotal=quizData.length;
-    renderQuizQ();
-  })
-  .catch(function(){
-    G('quiz-body').innerHTML='<p>連線失敗，請檢查網路</p>';
-    G('quiz-close').style.display='inline-block';
-  });
+  // 隨機抽 5 個月，隨機考英文或日文
+  var pool=SH(M).slice(0,5);
+  quizData=[];
+  for(var i=0;i<pool.length;i++){
+    var m=pool[i];
+    var lang=Math.random()<0.5?'en':'ja'; // 隨機英或日
+    var correct=lang==='en'?m.e:m.j;
+    // 收集所有該語言的答案
+    var all=[];
+    for(var j=0;j<M.length;j++){all.push(lang==='en'?M[j].e:M[j].j);}
+    // 去掉正確答案，隨機取 3 個錯誤選項
+    var wrong=[];for(var j=0;j<all.length;j++){if(all[j]!==correct)wrong.push(all[j]);}
+    wrong=SH(wrong).slice(0,3);
+    var opts=SH([correct].concat(wrong));
+    var ans=opts.indexOf(correct);
+    quizData.push({q:(lang==='en'?m.z+' 的英文是什麼？':m.z+' 的日文是什麼？'),opts:opts,ans:ans});
+  }
+  quizIdx=0;quizScore=0;quizTotal=quizData.length;
+  renderQuizQ();
 }
 
 function renderQuizQ(){
