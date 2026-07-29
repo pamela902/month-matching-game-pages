@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>月份雙語配對遊戲</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -273,6 +276,7 @@ function startQuiz(){
       return;
     }
     quizData=SH(quizData);
+    quizData=quizData.slice(0,5);
     quizIdx=0;quizScore=0;quizTotal=quizData.length;
     renderQuizQ();
   })
