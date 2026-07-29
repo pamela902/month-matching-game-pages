@@ -162,7 +162,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 var U='https://xrmkwnnlvvrztjgjchwm.supabase.co';
 var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhybWt3bm5sdnZyenRqZ2pjaHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMTM5NjYsImV4cCI6MjEwMDc4OTk2Nn0.XAmCRwKaFvJ3AI2Tn21wQwOlxoxBPw0HzgizJzIhKB0';
 
-var M=[{z:'一月',e:'January',j:'いちがつ',s:'❄️',c:'#85c1e9'},{z:'二月',e:'February',j:'にがつ',s:'❄️',c:'#85c1e9'},{z:'三月',e:'March',j:'さんがつ',s:'🌸',c:'#f5b7b1'},{z:'四月',e:'April',j:'しがつ',s:'🌸',c:'#f5b7b1'},{z:'五月',e:'May',j:'ごがつ',s:'🌸',c:'#f5b7b1'},{z:'六月',e:'June',j:'ろくがつ',s:'☀️',c:'#f9e79f'},{z:'七月',e:'July',j:'しちがつ',s:'☀️',c:'#f9e79f'},{z:'八月',e:'August',j:'はちがつ',s:'☀️',c:'#f9e79f'},{z:'九月',e:'September',j:'くがつ',s:'🍂',c:'#edbb99'},{z:'十月',e:'October',j:'じゅうがつ',s:'🍂',c:'#edbb99'},{z:'十一月',e:'November',j:'じゅういちがつ',s:'🍂',c:'#edbb99'},{z:'十二月',e:'December',j:'じゅうにがつ',s:'❄️',c:'#85c1e9'}];
+var M=[{z:'一月',e:'January',j:'いちがつ',s:'❄️',c:'#85c1e9',se:'______ is the first month of the year.',sj:'あたらしいとしは ______ です。'},{z:'二月',e:'February',j:'にがつ',s:'❄️',c:'#85c1e9',se:'Valentine\'s Day is in ______.',sj:'______ はまださむいです。'},{z:'三月',e:'March',j:'さんがつ',s:'🌸',c:'#f5b7b1',se:'Spring begins in ______.',sj:'はるは ______ からです。'},{z:'四月',e:'April',j:'しがつ',s:'🌸',c:'#f5b7b1',se:'Cherry blossoms bloom in ______.',sj:'さくらは ______ にさきます。'},{z:'五月',e:'May',j:'ごがつ',s:'🌸',c:'#f5b7b1',se:'Children\'s Day is in ______.',sj:'______ はこどものひです。'},{z:'六月',e:'June',j:'ろくがつ',s:'☀️',c:'#f9e79f',se:'Summer begins in ______.',sj:'______ はつゆのきせつです。'},{z:'七月',e:'July',j:'しちがつ',s:'☀️',c:'#f9e79f',se:'______ is a hot summer month.',sj:'______ はなつやすみです。'},{z:'八月',e:'August',j:'はちがつ',s:'☀️',c:'#f9e79f',se:'People enjoy fireworks in ______.',sj:'______ ははなびのきせつです。'},{z:'九月',e:'September',j:'くがつ',s:'🍂',c:'#edbb99',se:'School starts in ______.',sj:'______ はあきのはじまりです。'},{z:'十月',e:'October',j:'じゅうがつ',s:'🍂',c:'#edbb99',se:'Halloween is in ______.',sj:'______ にハロウィンがあります。'},{z:'十一月',e:'November',j:'じゅういちがつ',s:'🍂',c:'#edbb99',se:'The leaves turn red in ______.',sj:'______ はこうようがきれいです。'},{z:'十二月',e:'December',j:'じゅうにがつ',s:'❄️',c:'#85c1e9',se:'Christmas is in ______.',sj:'______ にクリスマスがあります。'}];
 
 // 每月對應季節圖片
 var IMG={'一月':'img/winter.jpeg','二月':'img/winter.jpeg','三月':'img/spring_trees.jpg','四月':'img/spring_trees.jpg','五月':'img/spring_trees.jpg','六月':'img/summer.jpg','七月':'img/summer.jpg','八月':'img/summer.jpg','九月':'img/autumn-.jpg','十月':'img/autumn-.jpg','十一月':'img/autumn-.jpg','十二月':'img/winter.jpeg'};
@@ -253,17 +253,17 @@ function startQuiz(){
   quizData=[];
   for(var i=0;i<pool.length;i++){
     var m=pool[i];
-    var lang=Math.random()<0.5?'en':'ja'; // 隨機英或日
+    var lang=Math.random()<0.5?'en':'ja';
     var correct=lang==='en'?m.e:m.j;
+    var sentence=lang==='en'?m.se:m.sj;
     // 收集所有該語言的答案
     var all=[];
     for(var j=0;j<M.length;j++){all.push(lang==='en'?M[j].e:M[j].j);}
-    // 去掉正確答案，隨機取 3 個錯誤選項
     var wrong=[];for(var j=0;j<all.length;j++){if(all[j]!==correct)wrong.push(all[j]);}
     wrong=SH(wrong).slice(0,3);
     var opts=SH([correct].concat(wrong));
     var ans=opts.indexOf(correct);
-    quizData.push({q:(lang==='en'?m.z+' 的英文是什麼？':m.z+' 的日文是什麼？'),opts:opts,ans:ans});
+    quizData.push({q:sentence,opts:opts,ans:ans});
   }
   quizIdx=0;quizScore=0;quizTotal=quizData.length;
   renderQuizQ();
