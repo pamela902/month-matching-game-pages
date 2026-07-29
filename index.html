@@ -20,9 +20,9 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 .mode-btn{display:inline-block;padding:10px 20px;margin:5px;border:2px solid transparent;border-radius:12px;cursor:pointer;font-size:1em;font-weight:700;color:#fff;transition:all .2s;opacity:.7}
 .mode-btn:hover{opacity:.9;transform:scale(1.05)}
 .mode-btn:has(:checked){opacity:1;box-shadow:0 4px 15px rgba(0,0,0,.2);transform:scale(1.05)}
-.mode-btn:nth-child(1){background:linear-gradient(135deg,#f39c12,#e67e22)}
-.mode-btn:nth-child(2){background:linear-gradient(135deg,#3498db,#2980b9)}
-.mode-btn:nth-child(3){background:linear-gradient(135deg,#e74c3c,#c0392b)}
+.mode-btn:nth-child(1){background:linear-gradient(135deg,#f9caa7,#f0a882)}
+.mode-btn:nth-child(2){background:linear-gradient(135deg,#a8d8ea,#7ec8e3)}
+.mode-btn:nth-child(3){background:linear-gradient(135deg,#f7c5cc,#e8a0b0)}
 .mode-btn input{display:none}
 .btn{padding:14px 40px;font-size:1.1em;border:none;border-radius:30px;cursor:pointer;font-weight:700;transition:all .3s;margin-top:20px}
 .btn-go{background:linear-gradient(135deg,#302b63,#5a4eb0);color:#fff;box-shadow:0 4px 15px rgba(48,43,99,.4)}
@@ -146,6 +146,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <button class="btn btn-go" id="re">再玩一次</button>
   <br>
   <button class="btn btn-go" id="quiz-btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);margin-top:10px">隨堂小考</button>
+  <button class="btn btn-go" id="speak-btn" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);margin-top:10px">口說測驗</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -165,6 +166,14 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <div id="quiz-body"></div>
   <button class="btn btn-go" id="quiz-submit" style="display:none">交卷</button>
   <button class="btn btn-go" id="quiz-close" style="display:none;background:#999">關閉</button>
+</div></div>
+
+<!-- 口說測驗彈窗 -->
+<div class="stage-popup" id="spk-pop"><div class="stage-msg" style="max-width:450px">
+  <h2 id="spk-title">口說測驗</h2>
+  <div id="spk-body"></div>
+  <button class="btn btn-go" id="spk-submit">開始錄音</button>
+  <button class="btn btn-go" id="spk-close" style="display:none;background:#999">關閉</button>
 </div></div>
 
 </div>
@@ -320,6 +329,65 @@ function checkQuizQ(){
   G('quiz-submit').onclick=function(){quizIdx++;renderQuizQ();};
 }
 
+// 口說測驗
+var spkData=[],spkIdx=0,spkScore=0,spkRec=null;
+function startSpeak(){
+  var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){alert('你的瀏覽器不支援語音辨識，請用 Chrome');return;}
+  var pool=SH(M).slice(0,5);
+  spkData=[];spkIdx=0;spkScore=0;
+  for(var i=0;i<pool.length;i++){
+    var m=pool[i];
+    var lang=S.mode==='en'?'en':(S.mode==='ja'?'ja':(Math.random()<0.5?'en':'ja'));
+    var correct=lang==='en'?m.e.toLowerCase():m.j;
+    spkData.push({zh:m.z,lang:lang,correct:correct,text:lang==='en'?m.e:m.j});
+  }
+  G('spk-pop').classList.add('show');G('spk-close').style.display='none';
+  renderSpkQ();
+}
+
+function renderSpkQ(){
+  if(spkIdx>=spkData.length){
+    G('spk-title').textContent='口說成績';
+    var emoji=spkScore===spkData.length?'🎉🏆':spkScore>=spkData.length/2?'👍':'💪';
+    G('spk-body').innerHTML='<h2 style="font-size:2.5em">'+emoji+'</h2><p style="font-size:1.4em">答對 <b>'+spkScore+'</b> / '+spkData.length+' 題</p>';
+    G('spk-submit').style.display='none';G('spk-close').style.display='inline-block';
+    G('spk-close').onclick=function(){G('spk-pop').classList.remove('show');};
+    return;
+  }
+  var q=spkData[spkIdx];
+  G('spk-title').textContent='第 '+(spkIdx+1)+' / '+spkData.length+' 題';
+  G('spk-body').innerHTML='<p style="font-size:2em;margin:20px 0">'+q.zh+'</p><p style="color:#666">請說出'+(q.lang==='en'?'英文':'日文')+'：</p><p id="spk-heard" style="font-size:1.3em;color:#9b59b6;min-height:1.5em"></p>';
+  G('spk-submit').style.display='inline-block';G('spk-submit').textContent='開始錄音';
+  G('spk-submit').disabled=false;
+  G('spk-submit').onclick=function(){speakListen(q);};
+  G('spk-close').style.display='none';
+}
+
+function speakListen(q){
+  var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(spkRec){spkRec.stop();}
+  spkRec=new SpeechRecognition();
+  spkRec.lang=q.lang==='en'?'en-US':'ja-JP';
+  spkRec.continuous=false;spkRec.interimResults=false;
+  G('spk-submit').disabled=true;G('spk-submit').textContent='聆聽中...';
+  G('spk-heard').textContent='';
+  spkRec.onresult=function(e){
+    var heard=e.results[0][0].transcript.trim();
+    G('spk-heard').textContent='你說：'+heard;
+    var isCorrect=heard.toLowerCase().replace(/\s/g,'')===q.correct.toLowerCase().replace(/\s/g,'');
+    if(isCorrect){spkScore++;G('spk-heard').style.color='#27ae60';}
+    else{G('spk-heard').style.color='#e74c3c';G('spk-heard').textContent+='（正確：'+q.text+'）';}
+    G('spk-submit').disabled=false;G('spk-submit').textContent='下一題';
+    G('spk-submit').onclick=function(){spkIdx++;renderSpkQ();};
+  };
+  spkRec.onerror=function(e){
+    G('spk-heard').textContent='辨識失敗，請再試一次';
+    G('spk-submit').disabled=false;G('spk-submit').textContent='重試';
+  };
+  spkRec.start();
+}
+
 function GO(){
   var a=G('c1').value.trim(),b=G('c2').value.trim();
   if(!a||!b){alert('請填寫班級和座號');return;}
@@ -457,6 +525,7 @@ function RE(){G('result').style.display='none';G('login').style.display='block';
 G('go').onclick=GO;
 G('re').onclick=RE;
 G('quiz-btn').onclick=startQuiz;
+G('speak-btn').onclick=startSpeak;
 G('c2').onkeydown=function(e){if(e.key==='Enter')GO();};
 })();
 </script>
