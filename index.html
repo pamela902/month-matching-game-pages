@@ -108,7 +108,7 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
     <div class="timer" id="tm">00:00</div>
   </div>
   <div class="pbar"><div class="pfill" id="pf"></div></div>
-  <p class="ptext">已完成 <b id="dn">0</b> / 12 組配對</p>
+  <p class="ptext">已完成 <b id="dn">0</b> / 5 組配對</p>
   <div class="cols" id="cols-area">
     <div class="col"><h3 id="h1">中文</h3><div id="c-a"></div></div>
     <div class="col"><h3 id="h2">英文</h3><div id="c-b"></div></div>
@@ -126,9 +126,9 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <div class="msg" id="rm"></div>
   <div class="stats">
     <p>玩家：<b id="rp"></b></p>
-    <p>總得分：<b id="rs"></b> 分（滿分 240）</p>
+    <p>總得分：<b id="rs"></b> 分（滿分 100）</p>
     <p>花費時間：<b id="rt"></b></p>
-    <p>階段一：<b id="rc1"></b> / 12 &nbsp;|&nbsp; 階段二：<b id="rc2"></b> / 12</p>
+    <p>階段一：<b id="rc1"></b> / 5 &nbsp;|&nbsp; 階段二：<b id="rc2"></b> / 5</p>
   </div>
   <p class="save-ok" id="sv">已儲存成績紀錄</p>
   <button class="btn btn-go" id="re">再玩一次</button>
@@ -340,8 +340,9 @@ function GO(){
 
 function RC(){
   G('phrase').style.display='none';G('ai-tip').style.display='none';
-  // stg=1: 中文 vs 英文, stg=2: 中文 vs 日文
-  var a=SH(M),b=SH(M);
+  // stg=1: 中文 vs 英文, stg=2: 中文 vs 日文, 每階段隨機 5 個月
+  var pool=SH(M).slice(0,5);
+  var a=SH(pool),b=SH(pool);
   var mk=function(lst,id,lg){
     G(id).innerHTML='';
     for(var i=0;i<lst.length;i++){
@@ -389,7 +390,7 @@ function CF(){
     for(var i=0;i<els.length;i++)els[i].classList.add('matched');
     S.sc+=10;S.mt++;
     if(S.stg===1)S.stg1ok++;else S.stg2ok++;
-    G('sc').textContent=S.sc;G('dn').textContent=S.mt;G('pf').style.width=(S.mt/24*100)+'%';
+    G('sc').textContent=S.sc;G('dn').textContent=S.mt;G('pf').style.width=(S.mt/10*100)+'%';
     showImg(S.selA);
   }else{
     for(var i=0;i<els.length;i++){els[i].classList.add('wrong');(function(e){setTimeout(function(){e.classList.remove('wrong');},500);})(els[i]);}
@@ -407,9 +408,9 @@ function CF(){
   S.selA=S.selB=null;G('phrase').style.display='none';G('ai-tip').style.display='none';
 
   // 階段完成判斷
-  if(S.stg===1 && S.stg1ok>=12){
+  if(S.stg===1 && S.stg1ok>=5){
     showPopup();
-  }else if(S.stg===2 && S.stg2ok>=12){
+  }else if(S.stg===2 && S.stg2ok>=5){
     EG();
   }
 }
@@ -428,14 +429,14 @@ function startStage2(){
   S.stg=2;S.selA=S.selB=null;S.mt=S.stg1ok;
   G('tg').textContent='第二階段';G('tg').className='stage-tag s2';
   G('h1').textContent='中文';G('h2').textContent='日文';
-  G('dn').textContent=S.mt;G('pf').style.width=(S.mt/24*100)+'%';
+  G('dn').textContent=S.mt;G('pf').style.width=(S.mt/10*100)+'%';
   RC();
   S.st=Date.now();
   S.ti=setInterval(function(){S.el=Math.floor((Date.now()-S.st)/1000);G('tm').textContent=FT(S.el);},200);
 }
 
 function EG(){
-  clearInterval(S.ti);var p=S.sc>=160;
+  clearInterval(S.ti);var p=S.sc>=80;
   G('game').style.display='none';G('result').style.display='block';
   G('rp').textContent=S.id;G('rs').textContent=S.sc;G('rt').textContent=FT(S.el);
   G('rc1').textContent=S.stg1ok;G('rc2').textContent=S.stg2ok;
