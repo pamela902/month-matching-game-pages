@@ -251,7 +251,7 @@ function RC(){
       var t=(lg==='zh')?m.z:(lg==='en')?m.e:m.j;
       var el=document.createElement('button');
       el.className='card';el.setAttribute('data-lg',lg);el.setAttribute('data-k',m.z);
-      el.textContent=m.s+' '+t;
+      el.textContent=t;
       el.onclick=function(){CK(this,this.getAttribute('data-lg'),this.getAttribute('data-k'));};
       G(id).appendChild(el);
     }
