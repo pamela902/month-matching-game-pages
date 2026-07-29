@@ -255,15 +255,15 @@ function startQuiz(){
     var m=pool[i];
     var lang=Math.random()<0.5?'en':'ja';
     var correct=lang==='en'?m.e:m.j;
-    var sentence=lang==='en'?m.se:m.sj;
-    // 收集所有該語言的答案
+    // 英文用造句填空，日文維持單字問答
+    var question=lang==='en'?m.se:(m.z+' 的日文是什麼？');
     var all=[];
     for(var j=0;j<M.length;j++){all.push(lang==='en'?M[j].e:M[j].j);}
     var wrong=[];for(var j=0;j<all.length;j++){if(all[j]!==correct)wrong.push(all[j]);}
     wrong=SH(wrong).slice(0,3);
     var opts=SH([correct].concat(wrong));
     var ans=opts.indexOf(correct);
-    quizData.push({q:sentence,opts:opts,ans:ans});
+    quizData.push({q:question,opts:opts,ans:ans});
   }
   quizIdx=0;quizScore=0;quizTotal=quizData.length;
   renderQuizQ();
