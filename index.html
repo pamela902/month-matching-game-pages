@@ -62,6 +62,10 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 .toast.show{opacity:1}
 .toast.wrong{background:rgba(231,76,60,.9)}
 .toast.correct{background:rgba(39,174,96,.9)}
+.img-popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;text-align:center}
+.img-popup.show{display:block;animation:popIn .4s}
+.img-popup img{max-width:300px;max-height:250px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+@keyframes popIn{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .phrase-box{margin-top:15px;padding:12px 18px;background:#fff3cd;border:2px solid #f39c12;border-radius:10px;text-align:center;font-size:1em;color:#6d5200;animation:fadeIn .3s}
 .ai-box{margin-top:8px;padding:10px 18px;background:#e8f4fd;border:2px solid #3498db;border-radius:10px;text-align:center;font-size:.9em;color:#1a5276;animation:fadeIn .3s}
 .ai-label{font-weight:700;margin-right:4px}
@@ -128,6 +132,9 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- 答對圖片彈窗 -->
+<div class="img-popup" id="img-pop"><img id="img-pop-img" src="" alt=""></div>
+
 <!-- 階段轉場彈窗 -->
 <div class="stage-popup" id="pop"><div class="stage-msg">
   <h2 id="pop-title"></h2>
@@ -142,9 +149,17 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 var U='https://xrmkwnnlvvrztjgjchwm.supabase.co';
 var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhybWt3bm5sdnZyenRqZ2pjaHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMTM5NjYsImV4cCI6MjEwMDc4OTk2Nn0.XAmCRwKaFvJ3AI2Tn21wQwOlxoxBPw0HzgizJzIhKB0';
 
-var M=[{z:'一月',e:'January',j:'いちがつ'},{z:'二月',e:'February',j:'にがつ'},{z:'三月',e:'March',j:'さんがつ'},{z:'四月',e:'April',j:'しがつ'},{z:'五月',e:'May',j:'ごがつ'},{z:'六月',e:'June',j:'ろくがつ'},{z:'七月',e:'July',j:'しちがつ'},{z:'八月',e:'August',j:'はちがつ'},{z:'九月',e:'September',j:'くがつ'},{z:'十月',e:'October',j:'じゅうがつ'},{z:'十一月',e:'November',j:'じゅういちがつ'},{z:'十二月',e:'December',j:'じゅうにがつ'}];
+var M=[{z:'一月',e:'January',j:'いちがつ',s:'❄️',c:'#85c1e9'},{z:'二月',e:'February',j:'にがつ',s:'❄️',c:'#85c1e9'},{z:'三月',e:'March',j:'さんがつ',s:'🌸',c:'#f5b7b1'},{z:'四月',e:'April',j:'しがつ',s:'🌸',c:'#f5b7b1'},{z:'五月',e:'May',j:'ごがつ',s:'🌸',c:'#f5b7b1'},{z:'六月',e:'June',j:'ろくがつ',s:'☀️',c:'#f9e79f'},{z:'七月',e:'July',j:'しちがつ',s:'☀️',c:'#f9e79f'},{z:'八月',e:'August',j:'はちがつ',s:'☀️',c:'#f9e79f'},{z:'九月',e:'September',j:'くがつ',s:'🍂',c:'#edbb99'},{z:'十月',e:'October',j:'じゅうがつ',s:'🍂',c:'#edbb99'},{z:'十一月',e:'November',j:'じゅういちがつ',s:'🍂',c:'#edbb99'},{z:'十二月',e:'December',j:'じゅうにがつ',s:'❄️',c:'#85c1e9'}];
 
-// 每月關聯詞語（適合國小生）
+// 每月對應季節圖片
+var IMG={'一月':'img/winter.jpeg','二月':'img/winter.jpeg','三月':'img/spring_trees.jpg','四月':'img/spring_trees.jpg','五月':'img/spring_trees.jpg','六月':'img/summer.jpg','七月':'img/summer.jpg','八月':'img/summer.jpg','九月':'img/autumn-.jpg','十月':'img/autumn-.jpg','十一月':'img/autumn-.jpg','十二月':'img/winter.jpeg'};
+var imgTimer=null;
+function showImg(month){
+  var src=IMG[month];if(!src)return;
+  G('img-pop-img').src=src;G('img-pop').classList.add('show');
+  clearTimeout(imgTimer);
+  imgTimer=setTimeout(function(){G('img-pop').classList.remove('show');},1800);
+}
 var P={'一月':{e:'New Year',j:'おしょうがつ（正月）'},'二月':{e:'Valentine',j:'せつぶん（節分）'},'三月':{e:'Spring',j:'ひなまつり（雛祭り）'},'四月':{e:'Cherry Blossom',j:'おはなみ（お花見）'},'五月':{e:'Children Day',j:'こどものひ（子供の日）'},'六月':{e:'Rainy Season',j:'つゆ（梅雨）'},'七月':{e:'Summer',j:'たなばた（七夕）'},'八月':{e:'Fireworks',j:'はなび（花火）'},'九月':{e:'Moon Viewing',j:'おつきみ（お月見）'},'十月':{e:'Halloween',j:'ハロウィン'},'十一月':{e:'Autumn Leaves',j:'こうよう（紅葉）'},'十二月':{e:'Christmas',j:'クリスマス'}};
 
 // 語音朗讀（瀏覽器內建）
@@ -235,7 +250,8 @@ function RC(){
       var m=lst[i];
       var t=(lg==='zh')?m.z:(lg==='en')?m.e:m.j;
       var el=document.createElement('button');
-      el.className='card';el.setAttribute('data-lg',lg);el.setAttribute('data-k',m.z);el.textContent=t;
+      el.className='card';el.setAttribute('data-lg',lg);el.setAttribute('data-k',m.z);
+      el.textContent=m.s+' '+t;
       el.onclick=function(){CK(this,this.getAttribute('data-lg'),this.getAttribute('data-k'));};
       G(id).appendChild(el);
     }
@@ -276,6 +292,7 @@ function CF(){
     S.sc+=10;S.mt++;
     if(S.stg===1)S.stg1ok++;else S.stg2ok++;
     G('sc').textContent=S.sc;G('dn').textContent=S.mt;G('pf').style.width=(S.mt/24*100)+'%';
+    showImg(S.selA);
   }else{
     for(var i=0;i<els.length;i++){els[i].classList.add('wrong');(function(e){setTimeout(function(){e.classList.remove('wrong');},500);})(els[i]);}
     S.sc=Math.max(0,S.sc-2);G('sc').textContent=S.sc;
