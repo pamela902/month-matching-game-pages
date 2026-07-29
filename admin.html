@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三語小學堂 - 後台管理</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft JhengHei',sans-serif;background:#f5f6fa;padding:20px}
+.ct{max-width:1000px;margin:0 auto}
+h1{color:#302b63;margin-bottom:5px}
+.sub{color:#999;margin-bottom:20px}
+.login-box{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08);max-width:400px;margin:60px auto}
+.login-box input{padding:12px;font-size:1.1em;border:2px solid #ddd;border-radius:10px;width:240px;text-align:center;margin:10px 0}
+.login-box input:focus{outline:none;border-color:#302b63}
+.btn{padding:12px 36px;border:none;border-radius:30px;cursor:pointer;font-weight:700;font-size:1em;transition:.2s}
+.btn-go{background:linear-gradient(135deg,#302b63,#5a4eb0);color:#fff}
+.btn-go:hover{transform:translateY(-1px)}
+.btn-sm{padding:6px 16px;font-size:.85em;border-radius:20px}
+.danger{background:#e74c3c;color:#fff}
+.warn{background:#f39c12;color:#fff}
+.panel{display:none}
+.stats{display:flex;gap:15px;margin-bottom:20px;flex-wrap:wrap}
+.stat-card{flex:1;min-width:140px;background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.stat-card .n{font-size:2em;font-weight:700;color:#302b63}
+.stat-card .l{font-size:.85em;color:#999;margin-top:4px}
+.toolbar{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap;align-items:center}
+.toolbar select,.toolbar input{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9em}
+table{width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06);border-collapse:collapse}
+th{background:#302b63;color:#fff;padding:12px;text-align:left;font-size:.9em}
+td{padding:10px 12px;border-bottom:1px solid #eee;font-size:.9em}
+tr:hover{background:#f8f9ff}
+.pass{color:#27ae60;font-weight:700}
+.fail{color:#e74c3c;font-weight:700}
+.empty{text-align:center;padding:40px;color:#999}
+</style>
+</head>
+<body>
+<div class="ct">
+
+<div class="login-box" id="login">
+  <h2>🔐 老師後台</h2>
+  <p style="color:#999;margin:10px 0">請輸入管理密碼</p>
+  <input type="password" id="pw" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')login()">
+  <br><button class="btn btn-go" onclick="login()">登入</button>
+  <p id="err" style="color:#e74c3c;margin-top:10px;display:none">密碼錯誤</p>
+</div>
+
+<div class="panel" id="panel">
+  <h1>📊 三語小學堂 — 後台管理</h1>
+  <p class="sub">學生遊戲成績總覽</p>
+
+  <div class="stats">
+    <div class="stat-card"><div class="n" id="s-total">-</div><div class="l">總遊玩次數</div></div>
+    <div class="stat-card"><div class="n" id="s-students">-</div><div class="l">不重複學生</div></div>
+    <div class="stat-card"><div class="n" id="s-avg">-</div><div class="l">平均分數</div></div>
+    <div class="stat-card"><div class="n" id="s-pass">-</div><div class="l">及格率</div></div>
+    <div class="stat-card"><div class="n" id="s-time">-</div><div class="l">平均時間（秒）</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-sm warn" onclick="loadData()">🔄 重新整理</button>
+    <select id="filter" onchange="renderTable()">
+      <option value="all">全部</option>
+      <option value="passed">及格</option>
+      <option value="failed">不及格</option>
+    </select>
+    <input id="search" placeholder="搜尋班級座號..." oninput="renderTable()">
+    <button class="btn btn-sm danger" onclick="clearAll()">🗑 清除全部資料</button>
+    <button class="btn btn-sm" style="background:#999;color:#fff" onclick="location.reload()">登出</button>
+  </div>
+
+  <table>
+    <thead><tr><th>班級座號</th><th>分數</th><th>答對題數</th><th>時間</th><th>結果</th><th>日期</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+var ADMIN_PW='teach2026';
+var SUPABASE_URL='https://xrmkwnnlvvrztjgjchwm.supabase.co';
+var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhybWt3bm5sdnZyenRqZ2pjaHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMTM5NjYsImV4cCI6MjEwMDc4OTk2Nn0.XAmCRwKaFvJ3AI2Tn21wQwOlxoxBPw0HzgizJzIhKB0';
+var allData=[];
+
+function login(){
+  if(document.getElementById('pw').value===ADMIN_PW){
+    document.getElementById('login').style.display='none';
+    document.getElementById('panel').style.display='block';
+    loadData();
+  }else{
+    document.getElementById('err').style.display='block';
+  }
+}
+
+function loadData(){
+  fetch(SUPABASE_URL+'/rest/v1/game_scores?select=*&order=created_at.desc',{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    allData=d;
+    renderStats();renderTable();
+  })
+  .catch(function(){alert('載入失敗');});
+}
+
+function renderStats(){
+  if(!allData.length){
+    document.getElementById('s-total').textContent='0';document.getElementById('s-students').textContent='0';
+    document.getElementById('s-avg').textContent='-';document.getElementById('s-pass').textContent='-';
+    document.getElementById('s-time').textContent='-';return;
+  }
+  var ids={};allData.forEach(function(r){ids[r.student_id]=1;});
+  var total=allData.length,students=Object.keys(ids).length;
+  var sumScore=0,sumTime=0,passed=0;
+  allData.forEach(function(r){sumScore+=r.score;sumTime+=r.time_seconds;if(r.passed)passed++;});
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-students').textContent=students;
+  document.getElementById('s-avg').textContent=Math.round(sumScore/total);
+  document.getElementById('s-pass').textContent=Math.round(passed/total*100)+'%';
+  document.getElementById('s-time').textContent=Math.round(sumTime/total);
+}
+
+function renderTable(){
+  var filter=document.getElementById('filter').value;
+  var search=document.getElementById('search').value.toLowerCase();
+  var rows=allData.filter(function(r){
+    if(filter==='passed'&&!r.passed)return false;
+    if(filter==='failed'&&r.passed)return false;
+    if(search&&r.student_id.toLowerCase().indexOf(search)<0)return false;
+    return true;
+  });
+  var tbody=document.getElementById('tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">尚無資料</td></tr>';return;}
+  tbody.innerHTML=rows.map(function(r){
+    return '<tr><td>'+r.student_id+'</td><td>'+r.score+'</td><td>'+r.total_matches+'</td><td>'+r.time_seconds+' 秒</td><td class="'+(r.passed?'pass':'fail')+'">'+(r.passed?'及格':'不及格')+'</td><td>'+new Date(r.created_at).toLocaleString('zh-TW')+'</td></tr>';
+  }).join('');
+}
+
+function clearAll(){
+  if(!confirm('確定要刪除所有學生成績資料？此動作無法復原！'))return;
+  fetch(SUPABASE_URL+'/rest/v1/game_scores?id=gt.0',{method:'DELETE',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}})
+  .then(function(){alert('已清除');loadData();})
+  .catch(function(){alert('刪除失敗，請檢查權限');});
+}
+</script>
+</body>
+</html>
