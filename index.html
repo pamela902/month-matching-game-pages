@@ -171,7 +171,7 @@ function showImg(month){
   var src=IMG[month];if(!src)return;
   G('img-pop-img').src=src;G('img-pop').classList.add('show');
   clearTimeout(imgTimer);
-  imgTimer=setTimeout(function(){G('img-pop').classList.remove('show');},1800);
+  imgTimer=setTimeout(function(){G('img-pop').classList.remove('show');},800);
 }
 var P={'一月':{e:'New Year',j:'おしょうがつ（正月）'},'二月':{e:'Valentine',j:'せつぶん（節分）'},'三月':{e:'Spring',j:'ひなまつり（雛祭り）'},'四月':{e:'Cherry Blossom',j:'おはなみ（お花見）'},'五月':{e:'Children Day',j:'こどものひ（子供の日）'},'六月':{e:'Rainy Season',j:'つゆ（梅雨）'},'七月':{e:'Summer',j:'たなばた（七夕）'},'八月':{e:'Fireworks',j:'はなび（花火）'},'九月':{e:'Moon Viewing',j:'おつきみ（お月見）'},'十月':{e:'Halloween',j:'ハロウィン'},'十一月':{e:'Autumn Leaves',j:'こうよう（紅葉）'},'十二月':{e:'Christmas',j:'クリスマス'}};
 
@@ -258,7 +258,7 @@ function startQuiz(){
     body:JSON.stringify({
       model:'llama-3.3-70b-versatile',
       messages:[
-        {role:'system',content:'你是台灣國小語言老師。請出5題月份中英日文選擇題。輸出嚴格JSON陣列，每題含q(題目), opts(4個選項陣列), ans(正確答案索引0-3)。題目用繁體中文，選項可混搭中英日文。不要markdown。'},
+        {role:'system',content:'你是台灣國小語言老師。請出5題月份中英日文選擇題。輸出嚴格JSON陣列。規則：題目用繁體中文問「X月的英文/日文是什麼」，選項必須是對應語言。例如問日文→選項是平假名，問英文→選項是英文單字。每題含q(題目), opts(4個選項), ans(正確索引0-3)。不要markdown。'},
         {role:'user',content:'學生答錯過的月份：'+wrongs+'。請針對弱項出題。輸出格式：[{"q":"題目","opts":["A","B","C","D"],"ans":0}]'}
       ],
       max_tokens:600,temperature:0.7
