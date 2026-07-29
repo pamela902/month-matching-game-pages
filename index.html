@@ -81,12 +81,17 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 
 <div id="login">
   <h1>月份雙語配對遊戲 <span style="font-size:.4em;color:#aaa;vertical-align:super">v5</span></h1>
-  <p class="sub">第一階段：中文↔英文 &nbsp;|&nbsp; 第二階段：中文↔日文</p>
+  <p class="sub">對照 中文 ． 英文 ． 日文 ｜ 先選要練什麼</p>
   <label for="c1">班級：</label>
   <input id="c1" placeholder="例：三年一班" maxlength="20">
   <label for="c2">座號：</label>
   <input id="c2" placeholder="例：5" maxlength="5">
   <br>
+  <div style="margin:12px 0;font-size:.95em">
+    <label style="margin:0 10px;cursor:pointer"><input type="radio" name="mode" value="both" checked> 綜合（英→日）</label>
+    <label style="margin:0 10px;cursor:pointer"><input type="radio" name="mode" value="en"> 只練英文</label>
+    <label style="margin:0 10px;cursor:pointer"><input type="radio" name="mode" value="ja"> 只練日文</label>
+  </div>
   <div style="margin-top:15px;font-size:.8em;color:#999">
     <a href="#" onclick="document.getElementById('ai-set').style.display='block';this.style.display='none';return false;">AI 設定（選填）</a>
     <div id="ai-set" style="display:none;margin-top:5px">
@@ -184,7 +189,7 @@ function SPK(txt,lg){
   window.speechSynthesis.speak(u);
 }
 
-var S={id:'',sc:0,mt:0,stg:1,stg1ok:0,stg2ok:0,selA:null,selB:null,ti:null,st:null,el:0,wrong:[]};
+var S={id:'',sc:0,mt:0,stg:1,stg1ok:0,stg2ok:0,selA:null,selB:null,ti:null,st:null,el:0,wrong:[],mode:'both'};
 // wrong 追蹤答錯的月份（用於 AI 分析）
 // stg=1: 中+英, stg=2: 中+日, stg1ok/stg2ok: 各階段答對數, selA/selB: 兩欄選取值
 
@@ -253,7 +258,7 @@ function startQuiz(){
   quizData=[];
   for(var i=0;i<pool.length;i++){
     var m=pool[i];
-    var lang=Math.random()<0.5?'en':'ja';
+    var lang=S.mode==='en'?'en':(S.mode==='ja'?'ja':(Math.random()<0.5?'en':'ja'));
     var correct=lang==='en'?m.e:m.j;
     // 英文用造句填空，日文維持單字問答
     var question=lang==='en'?m.se:(m.z+' 的日文是什麼？');
@@ -311,11 +316,14 @@ function checkQuizQ(){
 function GO(){
   var a=G('c1').value.trim(),b=G('c2').value.trim();
   if(!a||!b){alert('請填寫班級和座號');return;}
-  S.id=a+b+'號';S.sc=0;S.mt=0;S.stg=1;S.stg1ok=0;S.stg2ok=0;S.selA=S.selB=null;S.el=0;S.st=Date.now();S.wrong=[];
+  var mode=document.querySelector('input[name="mode"]:checked').value;
+  S.id=a+b+'號';S.sc=0;S.mt=0;S.stg=(mode==='ja'?2:1);S.stg1ok=0;S.stg2ok=0;S.selA=S.selB=null;S.el=0;S.st=Date.now();S.wrong=[];S.mode=mode;
   G('login').style.display='none';G('game').style.display='block';G('result').style.display='none';
   G('pn').textContent=S.id;G('sc').textContent='0';G('dn').textContent='0';G('pf').style.width='0%';G('tm').textContent='00:00';
-  G('tg').textContent='第一階段';G('tg').className='stage-tag s1';
-  G('h1').textContent='中文';G('h2').textContent='英文';
+  G('tg').textContent=mode==='ja'?'日文練習':(mode==='en'?'英文練習':'第一階段');
+  G('tg').className='stage-tag '+(mode==='ja'?'s2':(mode==='en'?'s1':'s1'));
+  G('h1').textContent='中文';
+  G('h2').textContent=mode==='ja'?'日文':'英文';
   RC();
   clearInterval(S.ti);
   S.ti=setInterval(function(){S.el=Math.floor((Date.now()-S.st)/1000);G('tm').textContent=FT(S.el);},200);
@@ -392,7 +400,7 @@ function CF(){
 
   // 階段完成判斷
   if(S.stg===1 && S.stg1ok>=5){
-    showPopup();
+    if(S.mode==='en'){EG();}else{showPopup();}
   }else if(S.stg===2 && S.stg2ok>=5){
     EG();
   }
@@ -419,10 +427,14 @@ function startStage2(){
 }
 
 function EG(){
-  clearInterval(S.ti);var p=S.sc>=80;
+  clearInterval(S.ti);var max=(S.mode==='both')?100:50;var p=S.sc>=max*0.8;
   G('game').style.display='none';G('result').style.display='block';
   G('rp').textContent=S.id;G('rs').textContent=S.sc;G('rt').textContent=FT(S.el);
   G('rc1').textContent=S.stg1ok;G('rc2').textContent=S.stg2ok;
+  G('rs').parentNode.innerHTML='總得分：<b id="rs">'+S.sc+'</b> 分（滿分 '+max+'）';
+  if(S.mode!=='both'){
+    document.querySelector('#result .stats p:last-child').style.display='none';
+  }
   if(p){G('ri').textContent='🎉🌟🏆';G('rm').textContent='你好棒！';G('rm').className='msg good';}
   else{G('ri').textContent='💪📚🔥';G('rm').textContent='再加油！';G('rm').className='msg bad';}
   SV(S.id,S.sc,S.stg1ok+S.stg2ok,S.el,p);
