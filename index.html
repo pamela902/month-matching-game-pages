@@ -258,7 +258,7 @@ function startQuiz(){
     body:JSON.stringify({
       model:'llama-3.3-70b-versatile',
       messages:[
-        {role:'system',content:'你是台灣國小語言老師。請出5題月份中英日文選擇題。輸出嚴格JSON陣列。規則：題目用繁體中文問「X月的英文/日文是什麼」，選項必須是對應語言。例如問日文→選項是平假名，問英文→選項是英文單字。每題含q(題目), opts(4個選項), ans(正確索引0-3)。不要markdown。'},
+        {role:'system',content:'你是台灣國小語言老師。出5題月份中英日文選擇題。重要：每題只問一種語言（英文或日文擇一），不要同時問兩種。選項必須全是該語言的單字。輸出嚴格JSON：每題含q(題目), opts(4個選項), ans(正確索引0-3)。不要markdown。'},
         {role:'user',content:'參考資料：一月=いちがつ、二月=にがつ、三月=さんがつ、四月=しがつ、五月=ごがつ、六月=ろくがつ、七月=しちがつ、八月=はちがつ、九月=くがつ、十月=じゅうがつ、十一月=じゅういちがつ、十二月=じゅうにがつ。英文：一月=January、二月=February、三月=March、四月=April、五月=May、六月=June、七月=July、八月=August、九月=September、十月=October、十一月=November、十二月=December。學生答錯過的月份：'+wrongs+'。針對弱項出5題。輸出：[{"q":"...","opts":["...",...],"ans":0}]'}
       ],
       max_tokens:600,temperature:0.7
