@@ -99,6 +99,14 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
     <label class="mode-btn"><input type="radio" name="mode" value="en"> 英文練習</label>
     <label class="mode-btn"><input type="radio" name="mode" value="ja"> 日文練習</label>
   </div>
+  <div style="margin:5px 0 8px">
+    <span style="font-size:.9em;color:#666">主題：</span>
+    <select id="topic" style="padding:8px 14px;font-size:.95em;border:2px solid #ddd;border-radius:8px;cursor:pointer">
+      <option value="months">月份</option>
+      <option value="weekdays">星期</option>
+      <option value="weather">天氣</option>
+    </select>
+  </div>
   <div style="margin-top:15px;font-size:.8em;color:#999">
     <a href="#" onclick="document.getElementById('ai-set').style.display='block';this.style.display='none';return false;">AI 設定（選填）</a>
     <div id="ai-set" style="display:none;margin-top:5px">
@@ -192,13 +200,60 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
 var U='https://xrmkwnnlvvrztjgjchwm.supabase.co';
 var K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhybWt3bm5sdnZyenRqZ2pjaHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMTM5NjYsImV4cCI6MjEwMDc4OTk2Nn0.XAmCRwKaFvJ3AI2Tn21wQwOlxoxBPw0HzgizJzIhKB0';
 
-var M=[{z:'一月',e:'January',j:'いちがつ',s:'❄️',c:'#85c1e9',se:'______ is the first month of the year.',sj:'あたらしいとしは ______ です。'},{z:'二月',e:'February',j:'にがつ',s:'❄️',c:'#85c1e9',se:'Valentine\'s Day is in ______.',sj:'______ はまださむいです。'},{z:'三月',e:'March',j:'さんがつ',s:'🌸',c:'#f5b7b1',se:'Spring begins in ______.',sj:'はるは ______ からです。'},{z:'四月',e:'April',j:'しがつ',s:'🌸',c:'#f5b7b1',se:'Cherry blossoms bloom in ______.',sj:'さくらは ______ にさきます。'},{z:'五月',e:'May',j:'ごがつ',s:'🌸',c:'#f5b7b1',se:'Children\'s Day is in ______.',sj:'______ はこどものひです。'},{z:'六月',e:'June',j:'ろくがつ',s:'☀️',c:'#f9e79f',se:'Summer begins in ______.',sj:'______ はつゆのきせつです。'},{z:'七月',e:'July',j:'しちがつ',s:'☀️',c:'#f9e79f',se:'______ is a hot summer month.',sj:'______ はなつやすみです。'},{z:'八月',e:'August',j:'はちがつ',s:'☀️',c:'#f9e79f',se:'People enjoy fireworks in ______.',sj:'______ ははなびのきせつです。'},{z:'九月',e:'September',j:'くがつ',s:'🍂',c:'#edbb99',se:'School starts in ______.',sj:'______ はあきのはじまりです。'},{z:'十月',e:'October',j:'じゅうがつ',s:'🍂',c:'#edbb99',se:'Halloween is in ______.',sj:'______ にハロウィンがあります。'},{z:'十一月',e:'November',j:'じゅういちがつ',s:'🍂',c:'#edbb99',se:'The leaves turn red in ______.',sj:'______ はこうようがきれいです。'},{z:'十二月',e:'December',j:'じゅうにがつ',s:'❄️',c:'#85c1e9',se:'Christmas is in ______.',sj:'______ にクリスマスがあります。'}];
+// 主題資料
+var TOPICS={
+  months:{
+    items:[
+      {z:'一月',e:'January',j:'いちがつ',s:'❄️',c:'#85c1e9',se:'______ is the first month of the year.',sj:'あたらしいとしは ______ です。',ph:'おしょうがつ（正月）'},
+      {z:'二月',e:'February',j:'にがつ',s:'❄️',c:'#85c1e9',se:"Valentine's Day is in ______.",sj:'______ はまださむいです。',ph:'せつぶん（節分）'},
+      {z:'三月',e:'March',j:'さんがつ',s:'🌸',c:'#f5b7b1',se:'Spring begins in ______.',sj:'はるは ______ からです。',ph:'ひなまつり（雛祭り）'},
+      {z:'四月',e:'April',j:'しがつ',s:'🌸',c:'#f5b7b1',se:'Cherry blossoms bloom in ______.',sj:'さくらは ______ にさきます。',ph:'おはなみ（お花見）'},
+      {z:'五月',e:'May',j:'ごがつ',s:'🌸',c:'#f5b7b1',se:"Children's Day is in ______.",sj:'______ はこどものひです。',ph:'こどものひ（子供の日）'},
+      {z:'六月',e:'June',j:'ろくがつ',s:'☀️',c:'#f9e79f',se:'Summer begins in ______.',sj:'______ はつゆのきせつです。',ph:'つゆ（梅雨）'},
+      {z:'七月',e:'July',j:'しちがつ',s:'☀️',c:'#f9e79f',se:'______ is a hot summer month.',sj:'______ はなつやすみです。',ph:'たなばた（七夕）'},
+      {z:'八月',e:'August',j:'はちがつ',s:'☀️',c:'#f9e79f',se:'People enjoy fireworks in ______.',sj:'______ ははなびのきせつです。',ph:'はなび（花火）'},
+      {z:'九月',e:'September',j:'くがつ',s:'🍂',c:'#edbb99',se:'School starts in ______.',sj:'______ はあきのはじまりです。',ph:'おつきみ（お月見）'},
+      {z:'十月',e:'October',j:'じゅうがつ',s:'🍂',c:'#edbb99',se:'Halloween is in ______.',sj:'______ にハロウィンがあります。',ph:'ハロウィン'},
+      {z:'十一月',e:'November',j:'じゅういちがつ',s:'🍂',c:'#edbb99',se:'The leaves turn red in ______.',sj:'______ はこうようがきれいです。',ph:'こうよう（紅葉）'},
+      {z:'十二月',e:'December',j:'じゅうにがつ',s:'❄️',c:'#85c1e9',se:'Christmas is in ______.',sj:'______ にクリスマスがあります。',ph:'クリスマス'}
+    ],
+    img:{'一月':'img/winter.jpeg','二月':'img/winter.jpeg','三月':'img/spring_trees.jpg','四月':'img/spring_trees.jpg','五月':'img/spring_trees.jpg','六月':'img/summer.jpg','七月':'img/summer.jpg','八月':'img/summer.jpg','九月':'img/autumn-.jpg','十月':'img/autumn-.jpg','十一月':'img/autumn-.jpg','十二月':'img/winter.jpeg'}
+  },
+  weekdays:{
+    items:[
+      {z:'星期一',e:'Monday',j:'げつようび',s:'📅',c:'#e74c3c',se:'______ is the first day of the week.',sj:'いっしゅうかんのはじめは ______ です。',ph:'しゅうのはじまり'},
+      {z:'星期二',e:'Tuesday',j:'かようび',s:'📅',c:'#e67e22',se:'______ comes after Monday.',sj:'げつようびのつぎは ______ です。',ph:'2ばんめのひ'},
+      {z:'星期三',e:'Wednesday',j:'すいようび',s:'📅',c:'#f1c40f',se:'______ is the middle of the week.',sj:'いっしゅうかんのまんなかは ______ です。',ph:'しゅうのまんなか'},
+      {z:'星期四',e:'Thursday',j:'もくようび',s:'📅',c:'#2ecc71',se:'______ comes before Friday.',sj:'きんようびのまえは ______ です。',ph:'4ばんめのひ'},
+      {z:'星期五',e:'Friday',j:'きんようび',s:'📅',c:'#3498db',se:'______ is the last weekday.',sj:'しゅうまつのまえは ______ です。',ph:'しゅうまつまえ'},
+      {z:'星期六',e:'Saturday',j:'どようび',s:'📅',c:'#9b59b6',se:'______ is the first day of the weekend.',sj:'しゅうまつのはじめは ______ です。',ph:'しゅうまつ'},
+      {z:'星期日',e:'Sunday',j:'にちようび',s:'📅',c:'#e91e63',se:'______ is a day of rest.',sj:'______ はおやすみのひです。',ph:'おやすみのひ'}
+    ],
+    img:{}
+  },
+  weather:{
+    items:[
+      {z:'晴天',e:'Sunny',j:'はれ',s:'☀️',c:'#f9e79f',se:'It is ______ today.',sj:'きょうは ______ です。',ph:'たいよう'},
+      {z:'陰天',e:'Cloudy',j:'くもり',s:'☁️',c:'#bdc3c7',se:'The sky is ______.',sj:'そらは ______ です。',ph:'くも'},
+      {z:'雨天',e:'Rainy',j:'あめ',s:'🌧️',c:'#85c1e9',se:'It is ______ outside.',sj:'そとは ______ です。',ph:'かさ'},
+      {z:'下雪',e:'Snowy',j:'ゆき',s:'❄️',c:'#d5f5e3',se:'It is ______ in winter.',sj:'ふゆは ______ がふります。',ph:'ふゆ'},
+      {z:'颳風',e:'Windy',j:'かぜ',s:'💨',c:'#d7bde2',se:'It is very ______ today.',sj:'きょうは ______ がつよいです。',ph:'あき'},
+      {z:'炎熱',e:'Hot',j:'あつい',s:'🔥',c:'#e74c3c',se:'Summer is very ______.',sj:'なつはとても ______ です。',ph:'なつ'},
+      {z:'寒冷',e:'Cold',j:'さむい',s:'🥶',c:'#aed6f1',se:'Winter is very ______.',sj:'ふゆはとても ______ です。',ph:'ふゆ'}
+    ],
+    img:{}
+  }
+};
 
-// 每月對應季節圖片
-var IMG={'一月':'img/winter.jpeg','二月':'img/winter.jpeg','三月':'img/spring_trees.jpg','四月':'img/spring_trees.jpg','五月':'img/spring_trees.jpg','六月':'img/summer.jpg','七月':'img/summer.jpg','八月':'img/summer.jpg','九月':'img/autumn-.jpg','十月':'img/autumn-.jpg','十一月':'img/autumn-.jpg','十二月':'img/winter.jpeg'};
+// 動態取得當前主題資料
+function TM(){return TOPICS[G('topic').value];}
+function M(){return TM().items;}
+function IMG(){return TM().img||{};}
+function getPhrase(k){var m=FM(k);return m?m.ph:'';
+}
 var imgTimer=null;
 function showImg(month){
-  var src=IMG[month];if(!src)return;
+  var src=IMG()[month];if(!src)return;
   G('img-pop-img').src=src;G('img-pop').classList.add('show');
   clearTimeout(imgTimer);
   imgTimer=setTimeout(function(){G('img-pop').classList.remove('show');},800);
@@ -220,7 +275,7 @@ var S={id:'',sc:0,mt:0,stg:1,stg1ok:0,stg2ok:0,selA:null,selB:null,ti:null,st:nu
 
 function G(id){return document.getElementById(id);}
 
-function FM(k){for(var i=0;i<M.length;i++){if(M[i].z===k||M[i].e===k||M[i].j===k)return M[i];}return null;}
+function FM(k){var items=M();for(var i=0;i<items.length;i++){if(items[i].z===k||items[i].e===k||items[i].j===k)return items[i];}return null;}
 
 function SH(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
 
@@ -279,7 +334,7 @@ function startQuiz(){
   G('quiz-submit').style.display='none';
   G('quiz-close').style.display='none';
   // 隨機抽 5 個月，隨機考英文或日文
-  var pool=SH(M).slice(0,5);
+  var pool=SH(M()).slice(0,5);
   quizData=[];
   for(var i=0;i<pool.length;i++){
     var m=pool[i];
@@ -288,7 +343,7 @@ function startQuiz(){
     // 英文用造句填空，日文維持單字問答
     var question=lang==='en'?m.se:(m.z+' 的日文是什麼？');
     var all=[];
-    for(var j=0;j<M.length;j++){all.push(lang==='en'?M[j].e:M[j].j);}
+    var items=M();for(var j=0;j<items.length;j++){all.push(lang==='en'?items[j].e:items[j].j);}
     var wrong=[];for(var j=0;j<all.length;j++){if(all[j]!==correct)wrong.push(all[j]);}
     wrong=SH(wrong).slice(0,3);
     var opts=SH([correct].concat(wrong));
@@ -343,7 +398,7 @@ var spkData=[],spkIdx=0,spkScore=0,spkRec=null,spkTimer=null,spkCountdown=null;
 function startSpeak(){
   var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SpeechRecognition){alert('你的瀏覽器不支援語音辨識，請用 Chrome');return;}
-  var pool=SH(M).slice(0,5);
+  var pool=SH(M()).slice(0,5);
   spkData=[];spkIdx=0;spkScore=0;
   for(var i=0;i<pool.length;i++){
     var m=pool[i];
@@ -411,7 +466,7 @@ function speakListen(q){
 var lisData=[],lisIdx=0,lisScore=0;
 function startListen(){
   if(!window.speechSynthesis){alert('你的瀏覽器不支援語音播放，請用 Chrome');return;}
-  var pool=SH(M).slice(0,5);
+  var pool=SH(M()).slice(0,5);
   lisData=[];lisIdx=0;lisScore=0;
   for(var i=0;i<pool.length;i++){
     var m=pool[i];
@@ -419,7 +474,7 @@ function startListen(){
     var spoken=lang==='en'?m.e:m.j;
     var correct=m.z;
     // 收集錯誤的中文選項
-    var wrong=[];for(var j=0;j<M.length;j++){if(M[j].z!==correct)wrong.push(M[j].z);}
+    var items=M();var wrong=[];for(var j=0;j<items.length;j++){if(items[j].z!==correct)wrong.push(items[j].z);}
     wrong=SH(wrong).slice(0,3);
     var opts=SH([correct].concat(wrong));
     var ans=opts.indexOf(correct);
@@ -498,7 +553,7 @@ function GO(){
 function RC(){
   G('phrase').style.display='none';G('ai-tip').style.display='none';
   // stg=1: 中文 vs 英文, stg=2: 中文 vs 日文, 每階段隨機 5 個月
-  var pool=SH(M).slice(0,5);
+  var pool=SH(M()).slice(0,5);
   var a=SH(pool),b=SH(pool);
   var mk=function(lst,id,lg){
     G(id).innerHTML='';
@@ -528,10 +583,10 @@ function CK(el,lg,k){
   else if(lg==='ja')SPK(txt,'ja-JP');
   // 顯示關聯詞語
   if(el.classList.contains('sel')){
-    var ph=P[k];
+    var ph=getPhrase(k);
     if(ph){
       G('phrase').style.display='block';
-      G('ph-txt').textContent=k+'：'+ph.e+' / '+ph.j;
+      G('ph-txt').textContent=k+'：'+ph;
     }
   }else{G('phrase').style.display='none';}
   if(lg==='zh')S.selA=el.classList.contains('sel')?k:null;
