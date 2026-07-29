@@ -129,6 +129,8 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   </div>
   <p class="save-ok" id="sv">已儲存成績紀錄</p>
   <button class="btn btn-go" id="re">再玩一次</button>
+  <br>
+  <button class="btn btn-go" id="quiz-btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);margin-top:10px">AI 隨堂小考</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -140,6 +142,14 @@ h1{text-align:center;color:#302b63;font-size:1.8em;margin-bottom:5px}
   <h2 id="pop-title"></h2>
   <p id="pop-desc"></p>
   <button class="btn btn-go" id="pop-btn"></button>
+</div></div>
+
+<!-- AI 小考彈窗 -->
+<div class="stage-popup" id="quiz-pop"><div class="stage-msg" style="max-width:500px">
+  <h2 id="quiz-title">AI 隨堂小考</h2>
+  <div id="quiz-body"></div>
+  <button class="btn btn-go" id="quiz-submit" style="display:none">交卷</button>
+  <button class="btn btn-go" id="quiz-close" style="display:none;background:#999">關閉</button>
 </div></div>
 
 </div>
@@ -171,7 +181,8 @@ function SPK(txt,lg){
   window.speechSynthesis.speak(u);
 }
 
-var S={id:'',sc:0,mt:0,stg:1,stg1ok:0,stg2ok:0,selA:null,selB:null,ti:null,st:null,el:0};
+var S={id:'',sc:0,mt:0,stg:1,stg1ok:0,stg2ok:0,selA:null,selB:null,ti:null,st:null,el:0,wrong:[]};
+// wrong 追蹤答錯的月份（用於 AI 分析）
 // stg=1: 中+英, stg=2: 中+日, stg1ok/stg2ok: 各階段答對數, selA/selB: 兩欄選取值
 
 function G(id){return document.getElementById(id);}
@@ -227,10 +238,82 @@ function aiTip(month,stage){
   });
 }
 
+// AI 隨堂小考
+var quizData=[];
+function startQuiz(){
+  var gk=getGroqKey();if(!gk){alert('請先在登入頁設定 Groq API Key');return;}
+  G('quiz-pop').classList.add('show');
+  G('quiz-title').textContent='AI 出題中...';
+  G('quiz-body').innerHTML='<p style="color:#666">正在生成題目，請稍候...</p>';
+  G('quiz-submit').style.display='none';
+  G('quiz-close').style.display='none';
+
+  var wrongs=S.wrong.length>0?S.wrong.join('、'):'無特別弱項';
+  fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+gk,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'llama-3.3-70b-versatile',
+      messages:[
+        {role:'system',content:'你是台灣國小語言老師。請出3題月份中英日文選擇題。輸出嚴格JSON陣列，每題含q(題目), opts(4個選項陣列), ans(正確答案索引0-3)。題目用繁體中文，選項可混搭中英日文。不要markdown。'},
+        {role:'user',content:'學生答錯過的月份：'+wrongs+'。請針對弱項出題。輸出格式：[{"q":"題目","opts":["A","B","C","D"],"ans":0}]'}
+      ],
+      max_tokens:600,temperature:0.7
+    })
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    var raw=d.choices&&d.choices[0]&&d.choices[0].message?d.choices[0].message.content:'[]';
+    try{
+      var json=raw.replace(/```json|```/g,'').trim();
+      quizData=JSON.parse(json);
+    }catch(e){quizData=[];}
+    if(!quizData.length){
+      G('quiz-body').innerHTML='<p>出題失敗，請再試一次</p>';
+      G('quiz-close').style.display='inline-block';
+      return;
+    }
+    renderQuiz();
+  })
+  .catch(function(){
+    G('quiz-body').innerHTML='<p>連線失敗，請檢查網路</p>';
+    G('quiz-close').style.display='inline-block';
+  });
+}
+
+function renderQuiz(){
+  G('quiz-title').textContent='AI 隨堂小考';
+  var h='';
+  for(var i=0;i<quizData.length;i++){
+    var q=quizData[i];h+='<div style="text-align:left;margin:12px 0"><b>'+(i+1)+'. '+q.q+'</b></div>';
+    for(var j=0;j<q.opts.length;j++){
+      h+='<label style="display:block;text-align:left;padding:4px 0;cursor:pointer"><input type="radio" name="q'+i+'" value="'+j+'"> '+q.opts[j]+'</label>';
+    }
+  }
+  G('quiz-body').innerHTML=h;
+  G('quiz-submit').style.display='inline-block';
+  G('quiz-submit').textContent='交卷';
+  G('quiz-submit').onclick=checkQuiz;
+  G('quiz-close').style.display='inline-block';
+  G('quiz-close').onclick=function(){G('quiz-pop').classList.remove('show');};
+}
+
+function checkQuiz(){
+  var correct=0;
+  for(var i=0;i<quizData.length;i++){
+    var sel=document.querySelector('input[name="q'+i+'"]:checked');
+    if(sel&&parseInt(sel.value)===quizData[i].ans)correct++;
+  }
+  var emoji=correct===3?'🎉🏆':correct>=2?'👍':'💪';
+  G('quiz-body').innerHTML='<h2 style="font-size:2em">'+emoji+'</h2><p style="font-size:1.3em">答對 <b>'+correct+'</b> / '+quizData.length+' 題</p>'+(correct===3?'<p style="color:#27ae60">太厲害了！全部答對！</p>':'<p style="color:#e67e22">再練習一下會更好！</p>');
+  G('quiz-submit').style.display='none';
+  G('quiz-close').textContent='關閉';
+  G('quiz-close').onclick=function(){G('quiz-pop').classList.remove('show');};
+}
+
 function GO(){
   var a=G('c1').value.trim(),b=G('c2').value.trim();
   if(!a||!b){alert('請填寫班級和座號');return;}
-  S.id=a+b+'號';S.sc=0;S.mt=0;S.stg=1;S.stg1ok=0;S.stg2ok=0;S.selA=S.selB=null;S.el=0;S.st=Date.now();
+  S.id=a+b+'號';S.sc=0;S.mt=0;S.stg=1;S.stg1ok=0;S.stg2ok=0;S.selA=S.selB=null;S.el=0;S.st=Date.now();S.wrong=[];
   G('login').style.display='none';G('game').style.display='block';G('result').style.display='none';
   G('pn').textContent=S.id;G('sc').textContent='0';G('dn').textContent='0';G('pf').style.width='0%';G('tm').textContent='00:00';
   G('tg').textContent='第一階段';G('tg').className='stage-tag s1';
@@ -302,6 +385,8 @@ function CF(){
     var ans='答錯了！'+S.selA+' 的正確配對是 '+(lang==='en'?m1.e:m1.j)+'，'+S.selB+' 的正確配對是 '+(lang==='en'?m2.e:m2.j);
     showToast(ans,'wrong');
     aiTip(m1.z, S.stg);
+    if(S.wrong.indexOf(S.selA)<0)S.wrong.push(S.selA);
+    if(S.wrong.indexOf(S.selB)<0)S.wrong.push(S.selB);
   }
   for(var i=0;i<els.length;i++)els[i].classList.remove('sel');
   S.selA=S.selB=null;G('phrase').style.display='none';G('ai-tip').style.display='none';
@@ -354,6 +439,7 @@ function RE(){G('result').style.display='none';G('login').style.display='block';
 
 G('go').onclick=GO;
 G('re').onclick=RE;
+G('quiz-btn').onclick=startQuiz;
 G('c2').onkeydown=function(e){if(e.key==='Enter')GO();};
 })();
 </script>
